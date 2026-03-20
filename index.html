@@ -222,6 +222,7 @@ function showToast(message, duration = 3000) {
 
 function hideToast() {
   const toast = document.getElementById("toastMsg");
+  toast.classList.remove("opacity-100");
   toast.classList.add("opacity-0", "pointer-events-none");
 }
 
