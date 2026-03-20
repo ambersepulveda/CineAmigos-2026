@@ -121,44 +121,46 @@
 </div>
   <script>
     // ---------- PELÍCULAS BASE (las que aparecerán ahora) ----------
-    let movies = [
-      {
-        id: "m1",
-        title: "Scary Movie 6",
-        trailer: "https://youtu.be/UPDjaBBJThU",  // trailer oficial de Scary Movie clásico
-        date: "15 Abril 2026",
-        embedType: "youtube"
-      },
-      {
-        id: "m2",
-        title: "The Odyssey",
-        trailer: "https://youtu.be/Mzw2ttJD2qQ",  // tráiler épico 
-        date: "6 Junio 2026",
-        embedType: "youtube"
-      },
-      {
-        id: "m3",
-        title: "Doomsday",
-        trailer: "https://youtu.be/399Ez7WHK5s",   // trailer acción apocalíptica
-        date: "18 Diciembre 2026",
-        embedType: "youtube"
-      },
-      {
-        id: "m4",
-        title: "Spider-Man",
-        trailer: "https://youtu.be/SDuJu5JAZh4",   // trailer Spiderman: Across the Spider-Verse o similar
-        date: "31 Julio 2026",
-        embedType: "youtube"
-      },
-      {
-        id: "m5",
-        title: "Michael Jackson (Biopic)",
-        trailer: "https://youtu.be/AuYmKbtnmEA",   // teaser del biopic "Michael"
-        date: "24 Abril",
-        embedType: "youtube"
-      }
-    ];
-
+  let movies = JSON.parse(localStorage.getItem("cineamigos_movies")) || [
+  {
+    id: "m1",
+    title: "Scary Movie 6",
+    trailer: "https://youtu.be/UPDjaBBJThU",
+    date: "15 Abril 2026",
+    embedType: "youtube"
+  },
+  {
+    id: "m2",
+    title: "The Odyssey",
+    trailer: "https://youtu.be/Mzw2ttJD2qQ",
+    date: "6 Junio 2026",
+    embedType: "youtube"
+  },
+  {
+    id: "m3",
+    title: "Doomsday",
+    trailer: "https://youtu.be/399Ez7WHK5s",
+    date: "18 Diciembre 2026",
+    embedType: "youtube"
+  },
+  {
+    id: "m4",
+    title: "Spider-Man",
+    trailer: "https://youtu.be/SDuJu5JAZh4",
+    date: "31 Julio 2026",
+    embedType: "youtube"
+  },
+  {
+    id: "m5",
+    title: "Michael Jackson (Biopic)",
+    trailer: "https://youtu.be/AuYmKbtnmEA",
+    date: "24 Abril",
+    embedType: "youtube"
+  }
+];
+function saveMovies() {
+  localStorage.setItem("cineamigos_movies", JSON.stringify(movies));
+}
     // Función auxiliar para obtener embed de trailer (si no es válido, trailer placeholder gracioso)
     function getEmbedUrl(url, type) {
       if (!url || url.trim() === "") {
@@ -295,14 +297,14 @@ function hideToast() {
 
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
 
-    function deleteMovieById(id) {
-      if (confirm("¿Borrar esta película de la lista? ¡Tus amigos se pondrán tristes pero siempre puedes agregarla de nuevo!")) {
-        movies = movies.filter(m => m.id !== id);
-        renderMovies();
-        showToast(`✂️ Película eliminada. ¡Agrega otra si quieres!`, "🗑️");
-      }
-    }
-
+  function deleteMovieById(id) {
+  if (confirm("¿Borrar esta película de la lista? ¡Tus amigos se pondrán tristes pero siempre puedes agregarla de nuevo!")) {
+    movies = movies.filter(m => m.id !== id);
+    saveMovies();          // 👈 guarda los cambios
+    renderMovies();
+    showToast(`✂️ Película eliminada. ¡Agrega otra si quieres!`);
+  }
+}
     function openEditModal(movieId) {
       const movie = movies.find(m => m.id === movieId);
       if (movie) {
@@ -367,8 +369,9 @@ function hideToast() {
         });
         showToast(`🍿 ¡"${title}" se suma a la cartelera! Comparte con amigos`, "🥳");
       }
-      renderMovies();
-      showModal(false);
+     saveMovies();
+renderMovies();
+showModal(false);
     }
 
     // Activar / desactivar modo edición
