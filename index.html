@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>CineAmigos 2026 · Películas que veremos este año</title>
+  <!-- Tailwind CSS + Font Awesome + Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <!-- Config personalizada Tailwind (extend) -->
+  <style>
+    * { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+    body { background: linear-gradient(145deg, #f9f3e6 0%, #ffefe0 100%); }
+    /* Tarjetas con efecto chicle y hover juguetón */
+    .movie-card {
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+    .movie-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.25);
+    }
+    /* Botón editar modo mágico */
+    .edit-mode-active {
+      background-color: #facc15;
+      border: 2px dashed #d97706;
+      transition: 0.2s;
+    }
+    .modal-transition {
+      transition: opacity 0.2s ease, visibility 0.2s;
+    }
+    /* input estilo divertido */
+    .fun-input {
+      @apply w-full p-3 border-2 border-amber-300 rounded-2xl bg-white/80 focus:ring-4 focus:ring-amber-400 focus:border-amber-500 outline-none transition-all;
+    }
+    .btn-fun {
+      @apply px-5 py-2 rounded-full font-bold transition-all shadow-md active:scale-95;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- HEADER DIVERTIDO CON TÍTULO Y MODO EDITOR -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/40 backdrop-blur-sm rounded-3xl p-5 shadow-sm border border-amber-200">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-2 shadow-md">
+          <i class="fas fa-film text-white text-3xl"></i>
+        </div>
+        <div>
+          <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-800 to-orange-700">🎬 CineAmigos 2026</h1>
+          <p class="text-amber-700 font-medium flex items-center gap-1"><i class="fas fa-ticket-alt"></i> ¡Las películas que veremos este año!</p>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <button id="enableEditBtn" class="btn-fun bg-amber-500 hover:bg-amber-600 text-white shadow-amber-300/50 px-5 py-2 rounded-full flex items-center gap-2"><i class="fas fa-pen-fancy"></i> <span>Editar cartelera</span></button>
+        <button id="addMovieBtn" class="btn-fun bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 shadow-md"><i class="fas fa-plus-circle"></i> <span class="hidden sm:inline"> Añadir pelicula  </span><span class="sm:hidden">+</span></button>
+      </div>
+    </div>
+
+    <!-- INDICADOR DE MODO EDICIÓN (divertido) -->
+    <div id="editModeBadge" class="mt-3 text-center hidden">
+      <span class="inline-flex items-center gap-2 bg-yellow-300 text-yellow-900 px-5 py-2 rounded-full text-sm font-bold shadow-md border border-yellow-500 animate-pulse"><i class="fas fa-edit"></i> ✨ MODO EDICIÓN ACTIVADO ✨ — Haz clic en cualquier tarjeta para modificar, o usa los botones</span>
+    </div>
+
+    <!-- FRASE MOLONA -->
+    <div class="mt-5 text-center text-amber-600 italic flex flex-wrap justify-center gap-3 text-sm md:text-base">
+      <span><i class="fas fa-popcorn"></i> ¡Trailers, fechas y risas!</span>
+      <span><i class="fas fa-users"></i> Comparte con tus amigos, edita cuando quieras</span>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE PELÍCULAS (grid dinámico) -->
+  <div id="moviesContainer" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 auto-rows-fr" id="movieGrid">
+      <!-- Las películas se renderizan con JavaScript desde array inicial -->
+    </div>
+    <!-- Mensaje si no hay películas -->
+    <div id="emptyMessage" class="text-center py-16 hidden flex-col items-center gap-3 bg-white/40 rounded-3xl mt-4">
+      <i class="fas fa-laugh-beam text-5xl text-amber-400"></i>
+      <p class="text-xl font-semibold text-amber-700">¡Ups! No hay pelis aún, agrega algunas con el botón ✨</p>
+      <button id="emptyAddBtn" class="btn-fun bg-amber-500 text-white mt-2"><i class="fas fa-plus"></i> Añadir primera película</button>
+    </div>
+  </div>
+
+  <!-- MODAL PARA AGREGAR / EDITAR PELÍCULA (divertido y sencillo) -->
+  <div id="movieModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 modal-transition hidden p-4" style="visibility: hidden; opacity: 0;">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border-4 border-amber-300 overflow-hidden transform transition-all">
+      <div class="bg-gradient-to-r from-amber-400 to-orange-400 px-6 py-4 flex justify-between items-center">
+        <h2 class="text-2xl font-black text-white flex gap-2"><i class="fas fa-clapperboard"></i><span id="modalTitle">Agregar película</span></h2>
+        <button id="closeModalBtn" class="text-white text-3xl leading-5 hover:scale-110 transition">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="text" id="movieTitle" placeholder="Título de la película *" class="fun-input" autocomplete="off">
+        <input type="text" id="movieTrailer" placeholder="URL del tráiler (YouTube o Vimeo)" class="fun-input" autocomplete="off">
+        <input type="text" id="movieDate" placeholder="Fecha de estreno (ej: 12 Junio 2026, o Verano 2026)" class="fun-input">
+        <div class="flex gap-3 pt-2">
+          <button id="saveMovieBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl transition shadow-md"><i class="fas fa-save"></i> Guardar</button>
+          <button id="cancelModalBtn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-2xl transition">Cancelar</button>
+        </div>
+        <p class="text-xs text-amber-600 text-center"><i class="fas fa-info-circle"></i> Si dejas trailer vacío, se mostrará un clip gracioso.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICACIONES pequeñas divertidas -->
+  <div id="toastMsg" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-lg z-50 flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none" style="transition: opacity 0.3s;"><i class="fas fa-couch"></i> <span id="toastText"></span></div>
+
+  <script>
+    // ---------- PELÍCULAS BASE (las que aparecerán ahora) ----------
+    let movies = [
+      {
+        id: "m1",
+        title: "Scary Movie 6",
+        trailer: "https://youtu.be/UPDjaBBJThU",  // trailer oficial de Scary Movie clásico
+        date: "15 Abril 2026",
+        embedType: "youtube"
+      },
+      {
+        id: "m2",
+        title: "The Odyssey",
+        trailer: "https://youtu.be/Mzw2ttJD2qQ",  // tráiler épico 
+        date: "6 Junio 2026",
+        embedType: "youtube"
+      },
+      {
+        id: "m3",
+        title: "Doomsday",
+        trailer: "https://youtu.be/399Ez7WHK5s",   // trailer acción apocalíptica
+        date: "18 Diciembre 2026",
+        embedType: "youtube"
+      },
+      {
+        id: "m4",
+        title: "Spider-Man",
+        trailer: "https://youtu.be/SDuJu5JAZh4",   // trailer Spiderman: Across the Spider-Verse o similar
+        date: "31 Julio 2026",
+        embedType: "youtube"
+      },
+      {
+        id: "m5",
+        title: "Michael Jackson (Biopic)",
+        trailer: "https://youtu.be/AuYmKbtnmEA",   // teaser del biopic "Michael"
+        date: "24 Abril",
+        embedType: "youtube"
+      }
+    ];
+
+    // Función auxiliar para obtener embed de trailer (si no es válido, trailer placeholder gracioso)
+    function getEmbedUrl(url, type) {
+      if (!url || url.trim() === "") {
+        // Video placeholder divertido: "próximamente trailer loco" (un video de cine mudo cómico)
+        return "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&rel=0"; // Easter egg divertido (Rickroll amigable pero en contexto de humor, los amigos lo tomarán a risa)
+      }
+      // Si es youtube normal con watch?v= lo convertimos a embed
+      let embedUrl = url;
+      if (url.includes("youtube.com/watch?v=")) {
+        let videoId = url.split("v=")[1];
+        let ampersandIndex = videoId.indexOf("&");
+        if (ampersandIndex !== -1) videoId = videoId.substring(0, ampersandIndex);
+        embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      } else if (url.includes("youtu.be/")) {
+        let videoId = url.split("youtu.be/")[1];
+        let questionIndex = videoId.indexOf("?");
+        if (questionIndex !== -1) videoId = videoId.substring(0, questionIndex);
+        embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      } else if (url.includes("vimeo.com")) {
+        // soporte básico vimeo
+        let vimeoId = url.split("vimeo.com/")[1];
+        embedUrl = `https://player.vimeo.com/video/${vimeoId}`;
+      }
+      return embedUrl;
+    }
+
+    // Renderizar todas las películas en grid
+    let currentEditMode = false;
+    const movieGrid = document.getElementById("movieGrid");
+    const emptyMessageDiv = document.getElementById("emptyMessage");
+    const editBadge = document.getElementById("editModeBadge");
+    const enableEditBtn = document.getElementById("enableEditBtn");
+    const addMovieBtn = document.getElementById("addMovieBtn");
+    const modal = document.getElementById("movieModal");
+    const modalTitleSpan = document.getElementById("modalTitle");
+    const movieTitleInput = document.getElementById("movieTitle");
+    const movieTrailerInput = document.getElementById("movieTrailer");
+    const movieDateInput = document.getElementById("movieDate");
+    const saveMovieBtn = document.getElementById("saveMovieBtn");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const cancelModalBtn = document.getElementById("cancelModalBtn");
+
+    let editingMovieId = null; // null si es agregar
+
+    function showToast(message, icon = "🍿") {
+      const toast = document.getElementById("toastMsg");
+      const toastTextSpan = document.getElementById("toastText");
+      toastTextSpan.innerText = message;
+      toast.classList.remove("opacity-0", "pointer-events-none");
+      toast.classList.add("opacity-100");
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "pointer-events-none");
+      }, 2500);
+    }
+
+    function updateEmptyState() {
+      if (movies.length === 0) {
+        emptyMessageDiv.classList.remove("hidden");
+        movieGrid.classList.add("hidden");
+      } else {
+        emptyMessageDiv.classList.add("hidden");
+        movieGrid.classList.remove("hidden");
+      }
+    }
+
+    function renderMovies() {
+      if (!movieGrid) return;
+      if (movies.length === 0) {
+        updateEmptyState();
+        return;
+      }
+      updateEmptyState();
+      movieGrid.innerHTML = "";
+      movies.forEach(movie => {
+        const embedSrc = getEmbedUrl(movie.trailer, movie.embedType);
+        // Tarjeta chula con trailer incrustado
+        const card = document.createElement("div");
+        card.className = "movie-card bg-white rounded-3xl overflow-hidden shadow-lg border border-amber-200 flex flex-col transition-all duration-200";
+        if (currentEditMode) {
+          card.classList.add("cursor-pointer", "ring-2", "ring-yellow-400", "ring-offset-2");
+          card.style.cursor = "pointer";
+        }
+        // Contenido interno
+        card.innerHTML = `
+          <div class="relative aspect-video bg-black">
+            <iframe class="w-full h-full" src="${embedSrc}" title="Trailer ${movie.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            ${currentEditMode ? '<div class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 rounded-full p-1.5 shadow-md"><i class="fas fa-pencil-alt text-xs"></i></div>' : ''}
+          </div>
+          <div class="p-5 flex-1 flex flex-col">
+            <div class="flex justify-between items-start">
+              <h3 class="text-2xl font-extrabold text-gray-800 tracking-tight">${escapeHtml(movie.title)}</h3>
+              ${currentEditMode ? `<button class="delete-movie-btn text-red-500 hover:text-red-700 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm transition" data-id="${movie.id}"><i class="fas fa-trash-alt"></i></button>` : ''}
+            </div>
+            <div class="flex items-center gap-2 mt-2 text-amber-600 bg-amber-50 w-fit px-3 py-1 rounded-full text-sm font-semibold">
+              <i class="fas fa-calendar-alt"></i> <span>${escapeHtml(movie.date) || "Fecha por confirmar"}</span>
+            </div>
+            <div class="mt-4 text-sm text-gray-500 flex gap-2 items-center">
+              <i class="fas fa-video"></i> <span>Trailer listo 🎬</span>
+            </div>
+            ${currentEditMode ? `<div class="mt-3 text-xs text-center text-yellow-600 bg-yellow-50 rounded-xl py-1.5 mt-2"><i class="fas fa-hand-pointer"></i> Click para editar esta peli</div>` : ''}
+          </div>
+        `;
+
+        if (currentEditMode) {
+          card.addEventListener("click", (e) => {
+            // evitar que si pulsamos el botón de borrar se dispare doble
+            if (e.target.closest('.delete-movie-btn')) return;
+            openEditModal(movie.id);
+          });
+          // botón eliminar
+          const deleteBtn = card.querySelector('.delete-movie-btn');
+          if (deleteBtn) {
+            deleteBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              deleteMovieById(movie.id);
+            });
+          }
+        }
+        movieGrid.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    function deleteMovieById(id) {
+      if (confirm("¿Borrar esta película de la lista? ¡Tus amigos se pondrán tristes pero siempre puedes agregarla de nuevo!")) {
+        movies = movies.filter(m => m.id !== id);
+        renderMovies();
+        showToast(`✂️ Película eliminada. ¡Agrega otra si quieres!`, "🗑️");
+      }
+    }
+
+    function openEditModal(movieId) {
+      const movie = movies.find(m => m.id === movieId);
+      if (movie) {
+        editingMovieId = movieId;
+        modalTitleSpan.innerText = "✏️ Editar película";
+        movieTitleInput.value = movie.title;
+        movieTrailerInput.value = movie.trailer || "";
+        movieDateInput.value = movie.date || "";
+        showModal(true);
+      }
+    }
+
+    function openAddModal() {
+      editingMovieId = null;
+      modalTitleSpan.innerText = "🎬 Añadir nueva película";
+      movieTitleInput.value = "";
+      movieTrailerInput.value = "";
+      movieDateInput.value = "";
+      showModal(true);
+    }
+
+    function showModal(show) {
+      if (show) {
+        modal.classList.remove("hidden");
+        setTimeout(() => { modal.style.visibility = "visible"; modal.style.opacity = "1"; }, 10);
+      } else {
+        modal.style.visibility = "hidden";
+        modal.style.opacity = "0";
+        setTimeout(() => { modal.classList.add("hidden"); }, 200);
+      }
+    }
+
+    function saveMovieFromModal() {
+      const title = movieTitleInput.value.trim();
+      if (!title) {
+        showToast("¡El título es obligatorio! Dale un nombre chulo a la peli 🎞️", "⚠️");
+        return;
+      }
+      const trailerUrl = movieTrailerInput.value.trim();
+      const dateValue = movieDateInput.value.trim() || "Próximamente";
+      
+      if (editingMovieId) {
+        // editar existente
+        const index = movies.findIndex(m => m.id === editingMovieId);
+        if (index !== -1) {
+          movies[index] = {
+            ...movies[index],
+            title: title,
+            trailer: trailerUrl,
+            date: dateValue,
+          };
+          showToast(`✨ "${title}" actualizada con éxito`, "🎞️");
+        }
+      } else {
+        // nueva película con ID único
+        const newId = "id_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+        movies.push({
+          id: newId,
+          title: title,
+          trailer: trailerUrl,
+          date: dateValue,
+        });
+        showToast(`🍿 ¡"${title}" se suma a la cartelera! Comparte con amigos`, "🥳");
+      }
+      renderMovies();
+      showModal(false);
+    }
+
+    // Activar / desactivar modo edición
+    function setEditMode(active) {
+      currentEditMode = active;
+      if (active) {
+        editBadge.classList.remove("hidden");
+        enableEditBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Modo edición ON</span>';
+        enableEditBtn.classList.remove("bg-amber-500", "hover:bg-amber-600");
+        enableEditBtn.classList.add("bg-green-600", "hover:bg-green-700");
+        showToast("🎉 Modo edición activado! Haz clic en cualquier tarjeta para modificar o añadir películas", "✏️");
+      } else {
+        editBadge.classList.add("hidden");
+        enableEditBtn.innerHTML = '<i class="fas fa-pen-fancy"></i> <span>Editar cartelera</span>';
+        enableEditBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+        enableEditBtn.classList.add("bg-amber-500", "hover:bg-amber-600");
+        showToast("Modo edición desactivado. Para editar, activa de nuevo", "🔒");
+      }
+      renderMovies(); // re-render con o sin botones de edición
+    }
+
+    // Alternar: al hacer clic en botón editar, activamos modo edición (siempre activa, no toggle a desactivar? pero para salir desactivamos? implementamos toggle: si está activo se desactiva)
+    enableEditBtn.addEventListener("click", () => {
+      if (currentEditMode) {
+        setEditMode(false);
+      } else {
+        setEditMode(true);
+      }
+    });
+
+    addMovieBtn.addEventListener("click", () => {
+      if (!currentEditMode) {
+        showToast("🔐 Activa primero el modo edición con el botón 'Editar cartelera' para agregar películas", "🎫");
+        return;
+      }
+      openAddModal();
+    });
+
+    // Botón de agregar desde empty state
+    const emptyAddBtn = document.getElementById("emptyAddBtn");
+    if (emptyAddBtn) {
+      emptyAddBtn.addEventListener("click", () => {
+        if (!currentEditMode) {
+          showToast("Primero activa el modo edición (botón amarillo) para añadir películas", "🎬");
+          return;
+        }
+        openAddModal();
+      });
+    }
+
+    saveMovieBtn.addEventListener("click", saveMovieFromModal);
+    closeModalBtn.addEventListener("click", () => showModal(false));
+    cancelModalBtn.addEventListener("click", () => showModal(false));
+
+    // Cerrar modal haciendo click fuera del contenido
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) showModal(false);
+    });
+
+    // Render inicial
+    renderMovies();
+    // Por defecto modo edición desactivado
+    setEditMode(false);
+    // Si se quiere que otros puedan editar fácil, se explica con badges
+    showToast("🎬 ¡Bienvenido a CineAmigos! Pulsa 'Editar cartelera' para añadir o modificar pelis", "🍿", 3000);
+  </script>
+</body>
+</html>
